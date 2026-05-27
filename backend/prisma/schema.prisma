@@ -1,0 +1,210 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                 String      @id @default(uuid())
+  name               String
+  email              String      @unique
+  password           String
+  systemPassword     String?     // Plain text or reversible password for UI display
+
+  role               String      @default("user") // Legacy string-based role
+  roleId             String?
+  roleRef            Role?       @relation(fields: [roleId], references: [id])
+  departmentId       String?
+  departmentRef      Department? @relation(name: "UserToDepartment", fields: [departmentId], references: [id])
+  designation        String?
+  assignedLocationId String?
+  assignedLocationRef Location?  @relation(fields: [assignedLocationId], references: [id])
+  active             Boolean     @default(true)
+  createdAt          DateTime    @default(now())
+  updatedAt          DateTime    @updatedAt
+  notifications      InAppNotification[]
+}
+
+model Role {
+  id          String       @id @default(uuid())
+  name        String       @unique
+  weight      Int          @default(10)
+  dataScope   String       @default("personal") // global, departmental, personal
+  permissions Permission[]
+  users       User[]
+  employees   Employee[]
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+}
+
+model Permission {
+  id               String   @id @default(uuid())
+  roleId           String
+  role             Role     @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  module           String   // e.g., 'Employee', 'GatePass'
+  canRead          Boolean  @default(false)
+  canCreate        Boolean  @default(false)
+  canUpdate        Boolean  @default(false)
+  canDelete        Boolean  @default(false)
+  dashboardActions Json?    // Toggles for specific actions like 'approve', 'check_in'
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  
+  @@unique([roleId, module])
+}
+
+model VisitorType {
+  id          String   @id @default(uuid())
+  name        String
+  description String
+  status      String   @default("active")
+}
+
+model VisitingArea {
+  id          String   @id @default(uuid())
+  name        String
+  floor       String
+  description String
+  status      String   @default("active")
+}
+
+model Purpose {
+  id          String   @id @default(uuid())
+  name        String
+  description String
+  status      String   @default("active")
+}
+
+model Department {
+  id            String   @id @default(uuid())
+  name          String
+  status        String   @default("active")
+  managerEmployeeId String?  @unique
+  managerEmployee   Employee? @relation(name: "DepartmentManager", fields: [managerEmployeeId], references: [id])
+  users         User[]   @relation(name: "UserToDepartment")
+  employees     Employee[] @relation(name: "EmployeeToDepartment")
+}
+
+model Location {
+  id          String   @id @default(uuid())
+  name        String
+  description String
+  status      String   @default("active")
+  users       User[]
+  employees   Employee[]
+}
+model IdType {
+  id          String   @id @default(uuid())
+  name        String
+  description String
+  status      String   @default("active")
+}
+
+model CompanyRegister {
+  id               String   @id @default("default")
+  companyFullName  String   @default("")
+  companyShortName String   @default("")
+  companyContactNo String   @default("")
+  logoUrl          String   @default("")
+  hostName         String   @default("")
+  portNo           Int      @default(0)
+  userEmailId      String   @default("")
+  emailPassword    String   @default("")
+  startTime        String   @default("09:00")
+  endTime          String   @default("19:00")
+  updatedAt        DateTime @updatedAt
+}
+
+model Employee {
+  id                 String      @id @default(uuid())
+  name               String
+  employeeId         String
+  department         String      // legacy string department
+  departmentId       String?
+  departmentRef      Department? @relation(name: "EmployeeToDepartment", fields: [departmentId], references: [id])
+  designation        String?
+  email              String?
+  phone              String?
+  status             String      @default("active")
+  
+  // New RBAC & Routing fields
+  roleId             String?
+  roleRef            Role?       @relation(fields: [roleId], references: [id])
+  assignedLocationId String?
+  assignedLocationRef Location?  @relation(fields: [assignedLocationId], references: [id])
+  managedDepartments Department[] @relation(name: "DepartmentManager")
+}
+
+model CarryWith {
+  id          String   @id @default(uuid())
+  name        String
+  description String
+  status      String   @default("active")
+}
+
+model FormData {
+  id                      String         @id @default(uuid())
+  gatePassId              String?        @unique
+  gatePassType            String
+  passDate                DateTime
+  from                    DateTime?
+  to                      DateTime?
+  mobileNo                String
+  name                    String
+  emailId                 String
+  companyName             String?
+  address                 String?
+  state                   String?
+  city                    String?
+  representingVisitorType String?
+  subLocation             String?
+  toMeetWith              String?
+  carryWith               Json?
+  idType                  String?
+  idNumber                String?
+  description             String?
+  maskCovid               String?        @default("")
+  noOfPerson              Int            @default(0)
+  visitArea               Json?
+  purpose                 String?
+  allowedHours            String?
+  photoUrl                String         @default("")
+  createdAt               DateTime       @default(now())
+  updatedAt               DateTime       @updatedAt
+  status                  String?
+  approvedBy              String?
+  approvedAt              DateTime?
+  rejectedBy              String?
+  rejectedAt              DateTime?
+  rejectionReason         String?
+  checkedInBy             String?
+  checkedInAt             DateTime?
+  checkedOutBy            String?
+  checkedOutAt            DateTime?
+  persons                 PersonDetail[]
+}
+
+model PersonDetail {
+  id            String   @id @default(uuid())
+  formDataId    String
+  formData      FormData @relation(fields: [formDataId], references: [id], onDelete: Cascade)
+  name          String
+  phoneNo       String
+  aadharNumber  String
+  aadharFileUrl String   @default("")
+}
+
+model InAppNotification {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String
+  message   String
+  type      String   @default("info") // e.g., 'approval_request', 'info'
+  isRead    Boolean  @default(false)
+  link      String?  // Optional URL or route to navigate to
+  createdAt DateTime @default(now())
+}
