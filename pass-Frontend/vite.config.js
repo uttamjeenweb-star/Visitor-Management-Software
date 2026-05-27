@@ -14,6 +14,9 @@ export default defineConfig({
     react(),
     tailwindcss(),
   ],
+  preview: {
+    allowedHosts: true
+  },
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
