@@ -21,6 +21,7 @@ export const SocketProvider = ({ children }) => {
       newSocket = io(import.meta.env.VITE_API_BASE_URL || "http://localhost:5000", {
         auth: { token },
         withCredentials: true,
+        transports: ["websocket"], // Fix for Render 400 Bad Request by skipping HTTP polling
       });
 
       newSocket.on("connect", () => {

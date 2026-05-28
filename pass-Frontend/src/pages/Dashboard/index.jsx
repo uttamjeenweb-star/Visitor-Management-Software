@@ -93,6 +93,8 @@ export default function DashbordPage() {
         if (parsed.event === "dashboard-update" && parsed.data) {
           setDashboardState(parsed.data);
           setError(null);
+        } else if (parsed.event === "refresh-dashboard") {
+          fetchDashboardData();
         }
       } catch (err) {
         console.error("SSE parse message error:", err);
@@ -116,7 +118,8 @@ export default function DashbordPage() {
   const handleUpdateStatus = async (passId, newStatus, additionalData = {}) => {
     try {
       await queryPatch(`/capture/${passId}/status`, { status: newStatus, ...additionalData });
-      // The SSE broadcast will update all states automatically and instantly!
+      // Instantly refresh the dashboard after update
+      fetchDashboardData();
     } catch (err) {
       console.error("Failed to update status:", err);
       alert(err?.response?.data?.message || "Failed to update pass status.");
@@ -174,6 +177,10 @@ export default function DashbordPage() {
             opacity: 1;
           }
         }
+        @keyframes spin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
       `}</style>
 
       {/* Top Navbar */}
@@ -226,7 +233,7 @@ export default function DashbordPage() {
                 }}
               />
               <span style={{ fontSize: "0.75rem", color: "#166534", fontWeight: "600" }}>
-                Real-Time Live
+                {isLoading ? "Syncing..." : "Real-Time Live"}
               </span>
             </div>
           </div>
@@ -350,39 +357,34 @@ export default function DashbordPage() {
             )}
 
             {/* Loading Indicator */}
-            {isLoading ? (
+            {isLoading && (
               <div
                 style={{
                   display: "flex",
-                  flexDirection: "column",
                   alignItems: "center",
                   justifyContent: "center",
-                  padding: "5rem 0",
+                  padding: "1rem",
+                  color: "#0f766e",
+                  fontWeight: "500",
                 }}
               >
                 <div
                   style={{
-                    width: "3rem",
-                    height: "3rem",
-                    border: "4px solid #e2e8f0",
+                    width: "1.5rem",
+                    height: "1.5rem",
+                    border: "3px solid #e2e8f0",
                     borderTopColor: "#0f766e",
                     borderRadius: "50%",
                     animation: "spin 1s linear infinite",
+                    marginRight: "0.5rem",
                   }}
                 />
-                <span style={{ marginTop: "1rem", color: "#64748b", fontWeight: "500" }}>
-                  Loading real data...
-                </span>
-                <style>{`
-                  @keyframes spin {
-                    0% { transform: rotate(0deg); }
-                    100% { transform: rotate(360deg); }
-                  }
-                `}</style>
+                Loading real data...
               </div>
-            ) : (
-              /* Tables Section */
-              <div style={{ marginTop: "1rem", paddingBottom: "5rem" }}>
+            )}
+            
+            {/* Tables Section */}
+            <div style={{ marginTop: "1rem", paddingBottom: "5rem", opacity: isLoading ? 0.6 : 1, transition: "opacity 0.3s ease" }}>
                 {canViewRequestList && (
                   <DashboardTable
                     title="Requested Passes (Awaiting Creation)"
@@ -530,7 +532,6 @@ export default function DashbordPage() {
                   />
                 )}
               </div>
-            )}
           </div>
         </div>
       </div>
