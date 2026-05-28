@@ -50,3 +50,9 @@ export const emitNotification = (userId, notification) => {
     io.to(`user_${userId}`).emit("new_notification", notification);
   }
 };
+
+export const emitGlobalEvent = (event, data) => {
+  if (io) {
+    io.emit(event, data);
+  }
+};

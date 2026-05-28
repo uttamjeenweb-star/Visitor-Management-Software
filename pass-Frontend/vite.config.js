@@ -9,7 +9,7 @@ const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
 
 // https://vite.dev/config/
-export default defineConfig({
+export default defineConfig(({ mode }) => ({
   plugins: [
     react(),
     tailwindcss(),
@@ -23,6 +23,14 @@ export default defineConfig({
     },
   },
   build: {
+    sourcemap: false,
+    minify: 'terser',
+    terserOptions: {
+      compress: {
+        drop_console: mode === "production",
+        drop_debugger: mode === "production",
+      },
+    },
     rollupOptions: {
       output: {
         manualChunks(id) {
@@ -42,4 +50,4 @@ export default defineConfig({
   esbuild: {
     drop: ['console', 'debugger'],
   }
-})
+}))

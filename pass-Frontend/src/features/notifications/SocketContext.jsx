@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { io } from "socket.io-client";
 import { useAuth } from "../auth/AuthContext";
+import { useQueryClient } from "@tanstack/react-query";
 
 const SocketContext = createContext();
 
@@ -9,6 +10,7 @@ export const SocketProvider = ({ children }) => {
   const [socket, setSocket] = useState(null);
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
+  const queryClient = useQueryClient();
 
   useEffect(() => {
     let newSocket;
@@ -28,6 +30,12 @@ export const SocketProvider = ({ children }) => {
       newSocket.on("new_notification", (notification) => {
         setNotifications((prev) => [notification, ...prev]);
         setUnreadCount((prev) => prev + 1);
+      });
+
+      newSocket.on("data_updated", (data) => {
+        if (data && data.type) {
+          queryClient.invalidateQueries({ queryKey: [data.type] });
+        }
       });
 
       setSocket(newSocket);

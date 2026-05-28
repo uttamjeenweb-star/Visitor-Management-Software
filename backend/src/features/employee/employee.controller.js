@@ -1,5 +1,6 @@
 import * as employeeService from "./employee.service.js";
 import logger from "../../utils/logger.utils.js";
+import { emitGlobalEvent } from "../../socket.js";
 
 export const getEmployee = async (req, res, next) => {
   try {
@@ -28,6 +29,7 @@ export const createEmployee = async (req, res, next) => {
         employee
       }
     });
+    emitGlobalEvent("data_updated", { type: "employees" });
   } catch (err) {
     next(err);
   }
@@ -45,6 +47,7 @@ export const updateEmployee = async (req, res, next) => {
         employee
       }
     });
+    emitGlobalEvent("data_updated", { type: "employees" });
   } catch (err) {
     next(err);
   }
@@ -62,6 +65,7 @@ export const deleteEmployee = async (req, res, next) => {
         employee
       }
     });
+    emitGlobalEvent("data_updated", { type: "employees" });
   } catch (err) {
     next(err);
   }

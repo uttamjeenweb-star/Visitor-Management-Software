@@ -153,7 +153,7 @@ export function createApiClient(clientConfig, logger = defaultLogger) {
       });
 
       // Handle Token Refresh logic
-      if (status === 401 && !original._retry && original.url !== "/auth/refresh" && original.url !== "/auth/login") {
+      if (status === 401 && !original._retry && !original.url?.includes("/auth/refresh") && !original.url?.includes("/auth/login")) {
         if (isRefreshing) {
           try {
             await new Promise((resolve, reject) => {

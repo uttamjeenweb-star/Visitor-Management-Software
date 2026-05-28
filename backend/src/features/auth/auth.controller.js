@@ -5,10 +5,11 @@ import { verifyRefreshToken, signAccessToken } from "../../utils/jwt.utils.js";
 import { prisma } from "../../config/db.js";
 
 const setRefreshTokenCookie = (res, refreshToken) => {
+  const isProduction = process.env.NODE_ENV === 'production';
   res.cookie('refreshToken', refreshToken, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'strict',
+    secure: isProduction, // true in prod for https, false in dev for http
+    sameSite: isProduction ? 'none' : 'lax', // 'none' for cross-origin prod, 'lax' for dev
     maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
   });
 };

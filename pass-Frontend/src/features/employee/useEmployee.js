@@ -1,94 +1,110 @@
-import { useState, useEffect, useCallback } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getApiError } from "@/shared/services/ApiClient";
 import {
   getEmployee,
   createEmployee,
   updateEmployee,
   deleteEmployee,
-} from "@/master/apiCalling"; // Adjust path to match your API calling file location
+} from "@/master/apiCalling"; 
+
 export const useEmployees = () => {
-  const [employees, setEmployees] = useState([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState(null);
-  // Fetch all employees
-  const fetchEmployees = useCallback(async () => {
-    setIsLoading(true);
-    setError(null);
-    try {
+  const queryClient = useQueryClient();
+
+  const { data: employees = [], isLoading, error } = useQuery({
+    queryKey: ['employees'],
+    queryFn: async () => {
       const data = await getEmployee();
-      // Ensure data fallback to an array if API payload wraps it uniquely
       const items = Array.isArray(data) ? data : data?.employees || [];
-      setEmployees(
-        items.map((item) => ({ ...item, _id: item._id ?? item.id })),
-      );
-    } catch (err) {
-      getApiError(err, "Failed to fetch employees. Please try again.");
-    } finally {
-      setIsLoading(false);
+      return items.map((item) => ({ ...item, _id: item._id ?? item.id }));
+    },
+    onError: (err) => {
+      console.error(getApiError(err, "Failed to fetch employees. Please try again."));
     }
-  }, []);
-  // Create employee and update local state instantly
-  const handleCreate = async (payload) => {
-    setError(null);
-    try {
-      const created = await createEmployee(payload);
-      const record = created?.employee ?? created;
-      setEmployees((prev) => [
-        { ...record, _id: record._id ?? record.id },
-        ...prev,
+  });
+
+  const createMutation = useMutation({
+    mutationFn: createEmployee,
+    onMutate: async (newEmployee) => {
+      await queryClient.cancelQueries({ queryKey: ['employees'] });
+      const previousEmployees = queryClient.getQueryData(['employees']);
+      queryClient.setQueryData(['employees'], (old) => [
+        { ...newEmployee, _id: Date.now().toString() }, // optimistic ID
+        ...(old || [])
       ]);
-      return true;
-    } catch (err) {
-      getApiError(err, "Failed to create employee record.");
-      return false;
-    }
-  };
-  // Update employee profile
-  const handleUpdate = async (id, payload) => {
-    setError(null);
-    try {
-      const updated = await updateEmployee(id, payload);
-      const record = updated?.employee ?? updated;
-      setEmployees((prev) =>
-        prev.map((emp) =>
-          emp._id === id
-            ? { ...emp, ...record, _id: record._id ?? record.id ?? id }
-            : emp,
-        ),
+      return { previousEmployees };
+    },
+    onError: (err, newEmployee, context) => {
+      console.error(getApiError(err, "Failed to create employee record."));
+      queryClient.setQueryData(['employees'], context.previousEmployees);
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['employees'] });
+    },
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: ({ id, payload }) => updateEmployee(id, payload),
+    onMutate: async ({ id, payload }) => {
+      await queryClient.cancelQueries({ queryKey: ['employees'] });
+      const previousEmployees = queryClient.getQueryData(['employees']);
+      queryClient.setQueryData(['employees'], (old) =>
+        (old || []).map(emp => emp._id === id ? { ...emp, ...payload } : emp)
       );
-      return true;
-    } catch (err) {
-      getApiError(err, "Failed to update employee details.");
-      return false;
-    }
-  };
-  // Delete employee (Optimistic UI Update pattern)
-  const handleDelete = async (id) => {
-    setError(null);
-    const originalList = [...employees];
-    // Remove from UI immediately for snappy user experience
-    setEmployees((prev) => prev.filter((emp) => emp._id !== id));
-    try {
-      await deleteEmployee(id);
-    } catch (err) {
-      getApiError(
-        err,
-        "Failed to remove employee. Reverting table configuration.",
+      return { previousEmployees };
+    },
+    onError: (err, variables, context) => {
+      console.error(getApiError(err, "Failed to update employee details."));
+      queryClient.setQueryData(['employees'], context.previousEmployees);
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['employees'] });
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: deleteEmployee,
+    onMutate: async (id) => {
+      await queryClient.cancelQueries({ queryKey: ['employees'] });
+      const previousEmployees = queryClient.getQueryData(['employees']);
+      queryClient.setQueryData(['employees'], (old) =>
+        (old || []).filter(emp => emp._id !== id)
       );
-      setEmployees(originalList); // Rollback on API failure
-    }
-  };
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    fetchEmployees();
-  }, [fetchEmployees]);
+      return { previousEmployees };
+    },
+    onError: (err, id, context) => {
+      console.error(getApiError(err, "Failed to remove employee. Reverting table configuration."));
+      queryClient.setQueryData(['employees'], context.previousEmployees);
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['employees'] });
+    },
+  });
+
   return {
     employees,
     isLoading,
     error,
-    refresh: fetchEmployees,
-    onCreate: handleCreate,
-    onUpdate: handleUpdate,
-    onDelete: handleDelete,
+    refresh: () => queryClient.invalidateQueries({ queryKey: ['employees'] }),
+    onCreate: async (payload) => {
+      try {
+        await createMutation.mutateAsync(payload);
+        return true;
+      } catch {
+        return false;
+      }
+    },
+    onUpdate: async (id, payload) => {
+      try {
+        await updateMutation.mutateAsync({ id, payload });
+        return true;
+      } catch {
+        return false;
+      }
+    },
+    onDelete: async (id) => {
+      try {
+        await deleteMutation.mutateAsync(id);
+      } catch {}
+    },
   };
 };

@@ -41,7 +41,7 @@ export const createEmployeeService = async (data) => {
     employeeData.department = "Managed via Department ID";
   }
 
-  const hashedPassword = await bcrypt.hash(password, 12);
+  const hashedPassword = await bcrypt.hash(password, 10);
 
   // Generate dynamic employeeId based on Department
   let deptNamePrefix = "EMP";
@@ -142,7 +142,7 @@ export const updateEmployeeService = async (employeeId, data) => {
     };
 
     if (password) {
-      userUpdateData.password = await bcrypt.hash(password, 12);
+      userUpdateData.password = await bcrypt.hash(password, 10);
       userUpdateData.systemPassword = password;
     }
 

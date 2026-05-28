@@ -1,6 +1,7 @@
 import express, { json, urlencoded } from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
+import compression from "compression";
 import { securityHeaders, sanitizeInput } from "./middleware/sanitize.middleware.js";
 import { apiLimiter } from "./middleware/ratelimit.middleware.js";
 import morgan from "morgan";
@@ -15,16 +16,29 @@ import reportRoutes from "./features/report/report.routes.js";
 import { protect } from "./middleware/auth.middleware.js";
 
 const app = express();
-
+app.set("trust proxy", 1);
 // 1. GLOBAL MIDDLEWARES
-// Implement CORS FIRST so error responses (like 429 or 400) include CORS headers
+const allowedOrigins = process.env.CLIENT_URL 
+  ? process.env.CLIENT_URL.split(',').map(url => url.trim().replace(/\/$/, ''))
+  : [];
+
 app.use(cors({
-  origin: process.env.CLIENT_URL,
-  credentials: true
+  origin: function (origin, callback) {
+    if (!origin || allowedOrigins.includes(origin) || allowedOrigins.includes('*')) {
+      callback(null, true);
+    } else {
+      // In development, or if you want to allow all origins temporarily for debug:
+      // callback(null, true);
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true,
+  maxAge: 86400
 }));
 
 // Set security HTTP headers
 app.use(securityHeaders);
+app.use(compression());
 app.use("/api", apiLimiter);
 app.use(json({ limit: "10kb" }));
 app.use(urlencoded({ extended: true, limit: "10kb" }));
