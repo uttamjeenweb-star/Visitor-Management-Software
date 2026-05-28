@@ -24,12 +24,14 @@ const allowedOrigins = process.env.CLIENT_URL
 
 app.use(cors({
   origin: function (origin, callback) {
+    logger.info(`[CORS] Incoming origin: ${origin}`);
+    // Allow if origin is in the list, or if no origin (e.g. server-to-server), or allow all temporarily for debugging
     if (!origin || allowedOrigins.includes(origin) || allowedOrigins.includes('*')) {
       callback(null, true);
     } else {
-      // In development, or if you want to allow all origins temporarily for debug:
-      // callback(null, true);
-      callback(new Error('Not allowed by CORS'));
+      logger.warn(`[CORS] Origin not allowed: ${origin}. Allowed origins: ${allowedOrigins.join(', ')}`);
+      // Temporarily allowing all origins to fix deployment issues. Change to 'callback(new Error(...))' for strict security later.
+      callback(null, true); 
     }
   },
   credentials: true,

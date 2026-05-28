@@ -3,6 +3,7 @@ import * as authService from "./auth.service.js";
 import AppError from "../../utils/appError.js";
 import { verifyRefreshToken, signAccessToken } from "../../utils/jwt.utils.js";
 import { prisma } from "../../config/db.js";
+import logger from "../../utils/logger.utils.js";
 
 const setRefreshTokenCookie = (res, refreshToken) => {
   const isProduction = process.env.NODE_ENV === 'production';
@@ -45,6 +46,10 @@ export const login = catchAsync(async (req, res) => {
 export const refresh = catchAsync(async (req, res, next) => {
   const refreshToken = req.cookies.refreshToken;
   
+  // ADDED: Debug log for cookies
+  logger.info(`[REFRESH ROUTE] Incoming cookies: ${JSON.stringify(req.cookies)}`);
+  logger.info(`[REFRESH ROUTE] Extracted refreshToken: ${refreshToken ? "Exists" : "Missing"}`);
+
   if (!refreshToken) {
     return next(new AppError("No refresh token found", 401, "UNAUTHORIZED"));
   }

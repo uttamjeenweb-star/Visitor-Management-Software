@@ -1,3 +1,5 @@
+import logger from "../../utils/logger.utils.js";
+
 const clients = new Set();
 
 export const addClient = (res) => {
@@ -14,7 +16,7 @@ export const notifyClients = (event, data) => {
     try {
       client.write(`data: ${payload}\n\n`);
     } catch (err) {
-      console.error("Error writing to client SSE:", err.message);
+      logger.error("Error writing to client SSE:", err.message);
       clients.delete(client);
     }
   });
