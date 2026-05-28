@@ -9,7 +9,7 @@
     "seed:reset": "node src/scripts/resetDatabase.js",
     "seed:master:add": "node src/scripts/seedMasterDataAdd.js",
     "seed:master:reset": "node src/scripts/seedMasterDataReset.js",
-    "build": "npm run db:generate && npm run db:push",
+    "build": "npm install && npm run db:generate && npm run db:push",
     "start": "node src/server.js",
     "db:generate": "prisma generate",
     "db:push": "prisma db push",
