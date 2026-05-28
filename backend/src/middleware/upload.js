@@ -32,7 +32,7 @@ export const upload = (0, multer_1)({
 });
 
 export const uploadLogo = (0, multer_1)({
-  storage: storage,
+  storage: multer_1.memoryStorage(),
   fileFilter: imageFileFilter,
   limits: {
     fileSize: 2 * 1024 * 1024,

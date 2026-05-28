@@ -4,6 +4,7 @@ import path_1 from "path";
 import logger_utils_1 from "../../utils/logger.utils.js";
 import { prisma } from "../../config/db.js";
 import { createNotification } from "../notifications/notification.service.js";
+import { uploadImage } from "../../config/cloudinary.js";
 
 const generateGatePassId = async () => {
   const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
@@ -33,11 +34,11 @@ const processForm = async (data, file, aadharFiles) => {
       });
     }
     let photoUrl = "";
+    let photoPublicId = null;
     if (file) {
-      const photoFileName = `${Date.now()}-${file.originalname}`;
-      const photoSavePath = path_1.join(uploadDir, photoFileName);
-      fs_1.writeFileSync(photoSavePath, file.buffer);
-      photoUrl = `/uploads/${photoFileName}`;
+      const uploadResult = await uploadImage(file.buffer, 'create-pass/photos');
+      photoUrl = uploadResult.secure_url;
+      photoPublicId = uploadResult.public_id;
     }
     let carryWith = data.carryWith;
     let visitArea = data.visitArea;
@@ -60,22 +61,22 @@ const processForm = async (data, file, aadharFiles) => {
     } catch {
       persons = [];
     }
-    const personsWithFileUrls = persons.map((person, index) => {
+    const personsWithFileUrls = await Promise.all(persons.map(async (person, index) => {
       const aadharFile = aadharFiles && aadharFiles[index];
       if (aadharFile) {
-        const aadharFileName = `aadhar-${Date.now()}-${index}-${aadharFile.originalname}`;
-        const aadharSavePath = path_1.join(uploadDir, aadharFileName);
-        fs_1.writeFileSync(aadharSavePath, aadharFile.buffer);
+        const uploadResult = await uploadImage(aadharFile.buffer, 'create-pass/aadhar');
         return {
           ...person,
-          aadharFileUrl: `/uploads/${aadharFileName}`
+          aadharFileUrl: uploadResult.secure_url,
+          aadharPublicId: uploadResult.public_id
         };
       }
       return {
         ...person,
-        aadharFileUrl: ""
+        aadharFileUrl: "",
+        aadharPublicId: null
       };
-    });
+    }));
     const gatePassId = await generateGatePassId();
     const pass = await prisma.formData.create({
       data: {
@@ -104,13 +105,15 @@ const processForm = async (data, file, aadharFiles) => {
         purpose: data.purpose,
         allowedHours: data.allowedHours,
         photoUrl: photoUrl,
+        photoPublicId: photoPublicId,
         status: data.status || "Requested", // Defaulting to Requested to go to Requested Passes table
         persons: {
           create: personsWithFileUrls.map(p => ({
             name: p.name || "",
             phoneNo: p.phoneNo || "",
             aadharNumber: p.aadharNumber || "",
-            aadharFileUrl: p.aadharFileUrl
+            aadharFileUrl: p.aadharFileUrl,
+            aadharPublicId: p.aadharPublicId
           }))
         }
       },
@@ -153,9 +156,10 @@ const processForm = async (data, file, aadharFiles) => {
     }
 
     logger_utils_1.info(`Gate pass created: ${pass.id}`);
+
     return {
       success: true,
-      photoUrl,
+      photoUrl: pass.photoUrl,
       data: pass
     };
   } catch (err) {
@@ -242,7 +246,10 @@ const updatePassStatusService = async (idOrCode, status, updateData = {}, user =
     }
 
     const pass = await prisma.formData.findFirst({
-      where: finalFilters
+      where: finalFilters,
+      include: {
+        persons: true
+      }
     });
 
     if (!pass) {

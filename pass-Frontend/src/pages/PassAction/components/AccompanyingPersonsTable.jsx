@@ -101,7 +101,7 @@ export const AccompanyingPersonsTable = ({ passData, backendHost }) => {
                 <td style={{ padding: "0.75rem 1rem", textAlign: "center" }}>
                   {person.aadharFileUrl ? (
                     <a
-                      href={`${backendHost}${person.aadharFileUrl}`}
+                      href={person.aadharFileUrl.startsWith("http") ? person.aadharFileUrl : `${backendHost}${person.aadharFileUrl}`}
                       target="_blank"
                       rel="noreferrer"
                       style={{

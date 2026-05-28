@@ -159,7 +159,12 @@ export default function PassActionPage() {
   }
 
   const backendHost = (import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api/v1").replace("/api/v1", "");
-  const photoUrl = passData.photoUrl ? `${backendHost}${passData.photoUrl}` : "";
+  const resolveUrl = (url) => {
+    if (!url) return "";
+    if (url.startsWith("http")) return url;
+    return `${backendHost}${url}`;
+  };
+  const photoUrl = resolveUrl(passData.photoUrl);
 
   // Helper to color-code status badge
   const getStatusStyle = (status) => {

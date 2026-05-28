@@ -109,6 +109,7 @@ model CompanyRegister {
   companyShortName String   @default("")
   companyContactNo String   @default("")
   logoUrl          String   @default("")
+  logoPublicId     String?
   hostName         String   @default("")
   portNo           Int      @default(0)
   userEmailId      String   @default("")
@@ -172,6 +173,7 @@ model FormData {
   purpose                 String?
   allowedHours            String?
   photoUrl                String         @default("")
+  photoPublicId           String?
   createdAt               DateTime       @default(now())
   updatedAt               DateTime       @updatedAt
   status                  String?
@@ -195,6 +197,7 @@ model PersonDetail {
   phoneNo       String
   aadharNumber  String
   aadharFileUrl String   @default("")
+  aadharPublicId String?
 }
 
 model InAppNotification {

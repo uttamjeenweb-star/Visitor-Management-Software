@@ -4,7 +4,12 @@ export const GatePassTemplate = ({ passData, printSettings, getEmployeeName }) =
   if (!passData) return null;
 
   const backendHost = (import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api/v1").replace("/api/v1", "");
-  const photoUrl = passData.photoUrl ? `${backendHost}${passData.photoUrl}` : "";
+  const resolveUrl = (url) => {
+    if (!url) return "";
+    if (url.startsWith("http")) return url;
+    return `${backendHost}${url}`;
+  };
+  const photoUrl = resolveUrl(passData.photoUrl);
 
   const primaryColor = "#000000";
   const bgColor = "#ffffff";
