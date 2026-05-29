@@ -23,7 +23,7 @@ export default defineConfig(({ mode }) => ({
     },
   },
   build: {
-    sourcemap: false,
+    sourcemap: true,
     minify: 'terser',
     terserOptions: {
       compress: {
