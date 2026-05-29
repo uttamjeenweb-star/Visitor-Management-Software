@@ -10,19 +10,29 @@ export const AuthProvider = ({ children }) => {
 
   const fetchUser = async () => {
     try {
-      const token = localStorage.getItem("accessToken");
-      if (token) {
-        // Only fetch if we have a token (ApiClient will inject it)
-        const res = await api.get("/auth/me");
-        setUser(res.data.data.user);
-        setIsAuthenticated(true);
-      } else {
-        setIsAuthenticated(false);
+      let token = localStorage.getItem("accessToken");
+
+      if (!token) {
+        try {
+          const refreshRes = await api.post("/auth/refresh");
+          token = refreshRes.data.accessToken;
+          localStorage.setItem("accessToken", token);
+        } catch (refreshErr) {
+          setIsAuthenticated(false);
+          setIsLoading(false);
+          return;
+        }
       }
+
+      const res = await api.get("/auth/me");
+      setUser(res.data.data.user);
+      setIsAuthenticated(true);
     } catch (error) {
+      if (error.response && error.response.status === 401) {
+        localStorage.removeItem("accessToken");
+      }
       setUser(null);
       setIsAuthenticated(false);
-      localStorage.removeItem("accessToken");
     } finally {
       setIsLoading(false);
     }

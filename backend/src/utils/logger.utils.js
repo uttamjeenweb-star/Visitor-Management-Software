@@ -1,8 +1,3 @@
-var __importDefault = this && this.__importDefault || function (mod) {
-  return mod && mod.__esModule ? mod : {
-    default: mod
-  };
-};
 import winston_1 from "winston"; // custom format
 const customFormat = winston_1.format.printf(({
   timestamp,
