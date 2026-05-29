@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import api from "../../shared/services/api";
+import { getRoles, createRole, updateRole, deleteRole } from "@/master/rolePermissionCalling";
 
 export const RoleManagement = () => {
   const [roles, setRoles] = useState([]);
@@ -23,8 +24,8 @@ export const RoleManagement = () => {
 
   const fetchRoles = async () => {
     try {
-      const res = await api.get("/roles");
-      setRoles(res.data.data.roles);
+      const rolesData = await getRoles();
+      setRoles(rolesData);
     } catch (err) {
       setError("Failed to fetch roles");
     } finally {
@@ -164,9 +165,9 @@ export const RoleManagement = () => {
       }
 
       if (editingRole) {
-        await api.patch(`/roles/${editingRole.id}`, { name, dataScope, permissions: cleanPermissions });
+        await updateRole(editingRole.id, { name, dataScope, permissions: cleanPermissions });
       } else {
-        await api.post("/roles", { name, dataScope, permissions: cleanPermissions });
+        await createRole({ name, dataScope, permissions: cleanPermissions });
       }
       handleCloseForm();
       fetchRoles();
@@ -179,7 +180,7 @@ export const RoleManagement = () => {
   const handleDelete = async (id) => {
     if (window.confirm("Are you sure you want to delete this role?")) {
       try {
-        await api.delete(`/roles/${id}`);
+        await deleteRole(id);
         fetchRoles();
       } catch (err) {
         alert(err.response?.data?.message || "Error deleting role");

@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { queryGet, queryPatch } from "@/shared/services/api";
+import { getDashboardData, updatePassStatus } from "@/master/dashboardCalling";
 import { StatCard } from "./components/StatCard";
 import { ActionFormCard } from "./components/ActionFormCard";
 import { DashboardTable } from "./components/DashboardTable";
@@ -62,9 +63,9 @@ export default function DashbordPage() {
   const fetchDashboardData = async () => {
     try {
       setIsLoading(true);
-      const res = await queryGet("/capture/dashboard/data");
-      if (res.data && res.data.data) {
-        setDashboardState(res.data.data);
+      const data = await getDashboardData();
+      if (data) {
+        setDashboardState(data);
       }
       setError(null);
     } catch (err) {
@@ -117,7 +118,7 @@ export default function DashbordPage() {
 
   const handleUpdateStatus = async (passId, newStatus, additionalData = {}) => {
     try {
-      await queryPatch(`/capture/${passId}/status`, { status: newStatus, ...additionalData });
+      await updatePassStatus(passId, newStatus, additionalData);
       // Instantly refresh the dashboard after update
       fetchDashboardData();
     } catch (err) {
@@ -127,29 +128,11 @@ export default function DashbordPage() {
   };
 
   const handleCheckIn = (row) => {
-    const securityName = prompt(
-      "Please enter the name of the security personnel logging this visitor IN:",
-      "Security Gate 1",
-    );
-    if (securityName === null) return; // cancelled
-    if (!securityName.trim()) {
-      alert("Security personnel name is required.");
-      return;
-    }
-    handleUpdateStatus(row.id, "Checked-In", { checkedInBy: securityName.trim() });
+    handleUpdateStatus(row.id, "Checked-In");
   };
 
   const handleCheckOut = (row) => {
-    const securityName = prompt(
-      "Please enter the name of the security personnel logging this visitor OUT:",
-      "Security Gate 1",
-    );
-    if (securityName === null) return; // cancelled
-    if (!securityName.trim()) {
-      alert("Security personnel name is required.");
-      return;
-    }
-    handleUpdateStatus(row.id, "Checked-Out", { checkedOutBy: securityName.trim() });
+    handleUpdateStatus(row.id, "Checked-Out");
   };
 
   return (

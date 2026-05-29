@@ -329,14 +329,14 @@ export const PassDetailSection = ({
                 >
                   <option value="">Select Employee</option>
                   {employees.map((e, idx) => (
-                    <option key={idx} value={e._id}>
+                    <option key={idx} value={e.id}>
                       {e.name}
                     </option>
                   ))}
                 </select>
               ) : (
                 <div style={detailValueStyle}>
-                  {employees.find((e) => e._id === passData.toMeetWith)?.name ||
+                  {employees.find((e) => e.id === passData.toMeetWith)?.name ||
                     passData.toMeetWith ||
                     "-"}
                 </div>

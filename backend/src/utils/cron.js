@@ -68,7 +68,7 @@ const runCronJob = async () => {
           data: {
             status: newStatus,
             checkedOutAt: new Date(),
-            checkedOutBy: "Auto-Checkout",
+            checkedOutBy: "System",
           }
         });
         logger.info(`Auto checked out pass ${pass.id}`);
@@ -78,7 +78,7 @@ const runCronJob = async () => {
         const updateData = { status: newStatus };
         if (newStatus === "Checked-Out") {
           updateData.checkedOutAt = new Date();
-          updateData.checkedOutBy = "Auto-Checkout";
+          updateData.checkedOutBy = "System";
         }
         
         await prisma.formData.update({

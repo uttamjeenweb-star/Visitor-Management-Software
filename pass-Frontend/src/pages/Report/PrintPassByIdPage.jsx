@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { queryGet } from "@/shared/services/api";
+import { getPassById } from "@/master/printCalling";
 import { useEmployees } from "@/features/employee/useEmployee";
 import { Printer, Search, Loader, ShieldAlert, ArrowLeft, Building, User, MapPin } from "lucide-react";
 import { GatePassTemplate } from "@/shared/ui/GatePassTemplate";
@@ -58,9 +58,9 @@ export default function PrintPassByIdPage() {
     setPassData(null);
 
     try {
-      const res = await queryGet(`/capture/${searchId.trim()}`);
-      if (res.data && res.data.data) {
-        setPassData(res.data.data);
+      const data = await getPassById(searchId.trim());
+      if (data) {
+        setPassData(data);
       } else {
         setError("No Gate Pass found matching this ID/Short Code.");
       }

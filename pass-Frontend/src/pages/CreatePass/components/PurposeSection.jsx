@@ -51,7 +51,7 @@ export const PurposeSection = ({ formData, handleInputChange, purposes }) => {
           >
             <option value="">Select</option>
             {purposes.map((e, index) => (
-              <option key={e._id || index} value={e._id}>
+              <option key={e._id || index} value={e.name}>
                 {e.name}
               </option>
             ))}

@@ -1,7 +1,7 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { queryGet } from "@/shared/services/api";
+import { getReportData } from "@/master/reportCalling";
 import { Button } from '@/shared/ui/atoms/Button';
 import { useEmployees } from "@/features/employee/useEmployee";
 import { useVisitorArea } from "@/features/visitor_area/useVisitorArea";
@@ -96,10 +96,10 @@ export default function ReportsPage({ mode = "generate" }) {
       if (end) queryParams.push(`endDate=${end}`);
 
       const queryString = queryParams.length > 0 ? `?${queryParams.join('&')}` : '';
-      const response = await queryGet(`/report${queryString}`, {}, { cache: true, ttlMs: 10000 });
+      const data = await getReportData(queryString);
 
-      if (response.data && response.data.data) {
-        setPasses(response.data.data);
+      if (data) {
+        setPasses(data);
       } else {
         setPasses([]);
       }

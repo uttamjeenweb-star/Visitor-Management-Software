@@ -257,16 +257,29 @@ const updatePassStatusService = async (idOrCode, status, updateData = {}, user =
     }
 
     const dataToUpdate = { status };
+    
+    let actorString = "System";
+    if (user) {
+      const fullUser = await prisma.user.findUnique({
+        where: { id: user.id },
+        include: { roleRef: true, departmentRef: true }
+      });
+      if (fullUser) {
+        const dept = fullUser.departmentRef?.name || "No Department";
+        const role = fullUser.roleRef?.name || fullUser.role || "Unknown Role";
+        actorString = `${fullUser.name} - ${dept} - ${role}`;
+      }
+    }
 
     if (status === "Pending") {
       dataToUpdate.rejectedBy = null;
       dataToUpdate.rejectedAt = null;
       dataToUpdate.rejectionReason = null;
     } else if (status === "Approved") {
-      dataToUpdate.approvedBy = updateData.approvedBy || "Admin";
+      dataToUpdate.approvedBy = actorString;
       dataToUpdate.approvedAt = new Date();
     } else if (status === "Rejected") {
-      dataToUpdate.rejectedBy = updateData.rejectedBy || "Admin";
+      dataToUpdate.rejectedBy = actorString;
       dataToUpdate.rejectedAt = new Date();
       dataToUpdate.rejectionReason = updateData.rejectionReason || "No reason specified";
     } else if (status === "Checked-In") {
@@ -304,16 +317,21 @@ const updatePassStatusService = async (idOrCode, status, updateData = {}, user =
         }
       }
 
-      dataToUpdate.checkedInBy = updateData.checkedInBy || "Security";
+      dataToUpdate.checkedInBy = actorString;
       dataToUpdate.checkedInAt = new Date();
     } else if (status === "Checked-Out") {
       if (pass.status !== "Checked-In") {
         throw new Error(`Cannot check out. Pass is not Checked-In (current status is: ${pass.status}).`);
       }
-      dataToUpdate.checkedOutBy = updateData.checkedOutBy || "Security";
+      dataToUpdate.checkedOutBy = actorString;
       dataToUpdate.checkedOutAt = new Date();
     }
 
+    // Don't blindly assign updateData over the secure actor fields
+    delete updateData.approvedBy;
+    delete updateData.rejectedBy;
+    delete updateData.checkedInBy;
+    delete updateData.checkedOutBy;
     Object.assign(dataToUpdate, updateData);
 
     const updatedPass = await prisma.formData.update({
